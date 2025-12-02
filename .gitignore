@@ -31,3 +31,6 @@ android/app/release
 
 .idea/
 *.iml
+
+# Firebase iOS config
+ios/Runner/GoogleService-Info.plist
