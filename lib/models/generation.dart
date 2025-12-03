@@ -15,18 +15,19 @@ enum GenerationStatus {
 
 /// Represents a single AI-generated image with its scene type.
 class GeneratedImage {
-  final String url;
-  final String scene; // beach, city, roadtrip, cafe, etc.
+  final String path; // Storage path (e.g., users/{uid}/generated/{id}/beach.png)
+  final String scene; // beach, city, mountain, cafe, etc.
+  String? url; // Cached download URL
 
-  const GeneratedImage({
-    required this.url,
+  GeneratedImage({
+    required this.path,
     required this.scene,
   });
 
   /// Create from JSON map.
   factory GeneratedImage.fromJson(Map<String, dynamic> json) {
     return GeneratedImage(
-      url: json['url'] as String,
+      path: json['path'] as String,
       scene: json['scene'] as String,
     );
   }
@@ -34,7 +35,7 @@ class GeneratedImage {
   /// Convert to JSON map.
   Map<String, dynamic> toJson() {
     return {
-      'url': url,
+      'path': path,
       'scene': scene,
     };
   }

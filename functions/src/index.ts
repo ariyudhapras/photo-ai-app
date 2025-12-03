@@ -10,34 +10,39 @@ admin.initializeApp();
 setGlobalOptions({maxInstances: 10});
 
 // Scene configurations for AI generation
+// Prompts designed for natural, candid Instagram-style photos
 const SCENES = [
   {
     id: "beach",
     label: "Beach",
     prompt:
-      "tropical beach vacation with turquoise ocean water, " +
-      "white sand, palm trees, and beautiful sunset sky",
+      "relaxing at a beautiful tropical beach during golden hour, " +
+      "soft natural sunlight, turquoise water in background, " +
+      "casual vacation vibe, candid moment",
   },
   {
     id: "city",
     label: "City",
     prompt:
-      "modern metropolitan city with tall skyscrapers, " +
-      "busy urban street, and dramatic city lights",
+      "exploring a vibrant city street at dusk, " +
+      "warm street lights and neon signs in background, " +
+      "urban lifestyle aesthetic, natural street photography style",
   },
   {
     id: "mountain",
     label: "Mountain",
     prompt:
-      "majestic snowy mountain peak with breathtaking " +
-      "panoramic views and clear blue sky",
+      "hiking adventure with stunning mountain vista behind, " +
+      "crisp morning light, nature exploration mood, " +
+      "authentic outdoor travel moment",
   },
   {
     id: "cafe",
     label: "Cafe",
     prompt:
-      "cozy Parisian style outdoor cafe with warm " +
-      "string lights and charming European architecture",
+      "enjoying coffee at a charming European sidewalk cafe, " +
+      "soft afternoon light, cozy atmosphere with string lights, " +
+      "relaxed lifestyle moment",
   },
 ];
 
@@ -47,7 +52,7 @@ interface GenerateRequest {
 }
 
 interface GeneratedImage {
-  url: string;
+  path: string;
   scene: string;
 }
 
@@ -104,14 +109,25 @@ export const generateAIScenes = onCall(
       if (!imageResponse.ok) {
         throw new HttpsError("not-found", "Could not fetch the original image");
       }
+
+      // 5a. Validate MIME type (must be JPEG or PNG)
+      const rawContentType = imageResponse.headers.get("content-type") ?? "";
+      // Extract base MIME type (remove charset and other parameters)
+      const baseContentType = rawContentType.split(";")[0].trim().toLowerCase();
+
+      if (!["image/jpeg", "image/jpg", "image/png"].includes(baseContentType)) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Uploaded file must be a JPEG or PNG image."
+        );
+      }
+
       const imageBuffer = await imageResponse.arrayBuffer();
       const base64Image = Buffer.from(imageBuffer).toString("base64");
 
-      // Normalize MIME type - Gemini doesn't accept "image/jpg"
-      let mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
-      if (mimeType === "image/jpg") {
-        mimeType = "image/jpeg";
-      }
+      // Normalize MIME type for Gemini (convert jpg to jpeg)
+      const mimeType =
+        baseContentType === "image/jpg" ? "image/jpeg" : baseContentType;
       console.log(`Image MIME type: ${mimeType}`);
 
       // 6. Generate scenes using Gemini with image output
@@ -134,11 +150,12 @@ export const generateAIScenes = onCall(
           console.log(`Generating ${scene.id} scene...`);
 
           const prompt =
-            "Generate a new image based on this photo. " +
-            `Place the subject in a ${scene.prompt}. ` +
-            "Maintain the subject's face, body, and clothing exactly. " +
-            "Output a photorealistic, Instagram-worthy image. " +
-            "The output must be an image.";
+            "Create a natural, candid photo of this person " +
+            `${scene.prompt}. ` +
+            "Keep the person's face, features, and outfit exactly the same. " +
+            "Make it look like a real photo taken by a friend, " +
+            "not a studio shot. Natural lighting, relaxed pose. " +
+            "High quality, Instagram-ready.";
 
           const result = await model.generateContent([
             {
@@ -171,10 +188,10 @@ export const generateAIScenes = onCall(
               if (inlineData?.data) {
                 console.log(`Found image for ${scene.id}`);
 
-                // Upload generated image to Storage
+                // Upload generated image to Storage (protected by rules)
                 const genPath = `users/${uid}/generated/${generationId}`;
-                const fileName = `${genPath}/${scene.id}.png`;
-                const file = bucket.file(fileName);
+                const storagePath = `${genPath}/${scene.id}.png`;
+                const file = bucket.file(storagePath);
 
                 const imageData = Buffer.from(inlineData.data, "base64");
                 await file.save(imageData, {
@@ -183,16 +200,13 @@ export const generateAIScenes = onCall(
                   },
                 });
 
-                // Make the file publicly accessible and get URL
-                await file.makePublic();
-                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-
+                // Return storage path (client will get download URL via SDK)
                 generatedImages.push({
-                  url: publicUrl,
+                  path: storagePath,
                   scene: scene.id,
                 });
 
-                console.log(`Uploaded ${scene.id} to ${publicUrl}`);
+                console.log(`Uploaded ${scene.id} to ${storagePath}`);
                 break;
               }
             }
@@ -231,7 +245,7 @@ export const generateAIScenes = onCall(
           `${generatedImages.length} images`
       );
 
-      // 9. Return success response
+      // 9. Return success response with storage paths
       return {
         success: true,
         generationId: generationId,

@@ -1,9 +1,13 @@
+import 'dart:developer' as developer;
+
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/generation.dart';
 
 /// Service for calling Firebase Cloud Functions.
 class FunctionsService {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   /// Call the generateAIScenes Cloud Function.
   /// 
@@ -11,6 +15,7 @@ class FunctionsService {
   /// [imagePath] - The storage path for ownership validation.
   /// 
   /// Returns a list of generated images on success.
+  /// Storage paths are resolved to download URLs via Firebase Storage SDK.
   Future<GenerationResult> generateAIScenes({
     required String imageUrl,
     required String imagePath,
@@ -38,6 +43,9 @@ class FunctionsService {
             .map((e) => GeneratedImage.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
 
+        // Resolve storage paths to download URLs
+        await _resolveImageUrls(images);
+
         return GenerationResult(
           success: true,
           generationId: generationId,
@@ -57,6 +65,24 @@ class FunctionsService {
         message: e.message ?? 'Cloud Function call failed',
       );
     }
+  }
+
+  /// Resolve storage paths to download URLs for all images.
+  Future<void> _resolveImageUrls(List<GeneratedImage> images) async {
+    await Future.wait(
+      images.map((image) async {
+        try {
+          final url = await _storage.ref(image.path).getDownloadURL();
+          image.url = url;
+        } catch (e) {
+          // Log error but don't fail the entire operation
+          developer.log(
+            'Failed to resolve URL for ${image.path}: $e',
+            name: 'FunctionsService',
+          );
+        }
+      }),
+    );
   }
 }
 

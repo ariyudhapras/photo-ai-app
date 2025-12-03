@@ -27,12 +27,14 @@ class ImageGrid extends StatelessWidget {
       ));
     }
 
-    // Add generated images
+    // Add generated images (only those with resolved URLs)
     for (final image in generatedImages) {
-      items.add(_GridItem(
-        url: image.url,
-        label: _formatLabel(image.scene),
-      ));
+      if (image.url != null) {
+        items.add(_GridItem(
+          url: image.url!,
+          label: _formatLabel(image.scene),
+        ));
+      }
     }
 
     if (items.isEmpty) {
