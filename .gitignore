@@ -29,6 +29,9 @@ android/app/release
 # Misc
 *.log
 
+# Local development notes
+DEVELOPMENT_CHECKLIST.md
+
 .idea/
 *.iml
 
