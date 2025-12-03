@@ -23,18 +23,19 @@ class FunctionsService {
         ),
       );
 
-      final result = await callable.call<Map<String, dynamic>>({
+      final result = await callable.call({
         'imageUrl': imageUrl,
         'imagePath': imagePath,
       });
 
-      final data = result.data;
+      final data = Map<String, dynamic>.from(result.data as Map);
 
       // Check for success
       if (data['success'] == true) {
         final generationId = data['generationId'] as String;
-        final images = (data['images'] as List<dynamic>)
-            .map((e) => GeneratedImage.fromJson(e as Map<String, dynamic>))
+        final imagesList = data['images'] as List<dynamic>;
+        final images = imagesList
+            .map((e) => GeneratedImage.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
 
         return GenerationResult(
