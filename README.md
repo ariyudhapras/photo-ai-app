@@ -38,6 +38,8 @@ Provider + Services pattern — chosen over BLoC/Riverpod because the app has on
 
 ```text
 lib/
+├── config/         # AppTheme (colors, typography)
+├── models/         # Generation data model
 ├── services/       # Auth, Storage, Functions
 ├── providers/      # AppProvider (state machine)
 ├── screens/        # HomeScreen
@@ -121,15 +123,19 @@ Per the brief, this project used AI-assisted development for scaffolding and ref
 
 ### Error Handling
 
-| Error           | Behavior               |
-| --------------- | ---------------------- |
-| No network      | Retry button shown     |
-| Auth failure    | Re-attempt sign-in     |
-| Invalid file    | Rejected before upload |
-| Generation fail | Error message + retry  |
+| Error               | Behavior                                               |
+| ------------------- | ------------------------------------------------------ |
+| Upload timeout      | 20 second timeout → "Upload timed out" message + retry |
+| No network          | User-friendly message + retry button                   |
+| Auth failure        | "Authentication failed. Please restart the app."       |
+| Invalid file        | Rejected before upload (size >10MB, non-JPG/PNG)       |
+| Storage quota       | "Storage quota exceeded" message                       |
+| Generation fail     | Error message + retry button                           |
+| Cloud Function fail | 5 minute timeout, graceful error handling              |
 
 ### Technical Notes
 
+- Upload timeout: 20 seconds (production-ready, prevents infinite loading)
 - Gemini returns base64 inline → extracted, uploaded to Storage, path returned
 - MIME validation: strips charset params, normalizes `image/jpg` → `image/jpeg`
 - Removed `makePublic()` for security; URLs resolved client-side with auth

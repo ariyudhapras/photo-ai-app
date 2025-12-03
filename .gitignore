@@ -41,6 +41,9 @@ ios/Runner/GoogleService-Info.plist
 # Android local properties (user-specific SDK paths)
 android/local.properties
 
+# Internal documentation (README is sufficient)
+docs/
+
 #brief test
 Photo AI_Test Project.txt
 
