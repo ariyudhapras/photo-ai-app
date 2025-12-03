@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
@@ -24,15 +25,20 @@ class StorageService {
       final filename = '${_uuid.v4()}.$extension';
       final storagePath = 'users/$userId/originals/$filename';
 
-      // Upload file
+      // Upload file with 20 second timeout
       final ref = _storage.ref().child(storagePath);
       final uploadTask = ref.putFile(
         file,
         SettableMetadata(contentType: 'image/$extension'),
       );
 
-      // Wait for upload to complete
-      final snapshot = await uploadTask;
+      // Wait for upload to complete with timeout
+      final snapshot = await uploadTask.timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          throw TimeoutException('Upload timed out after 20 seconds');
+        },
+      );
 
       // Get download URL
       final downloadUrl = await snapshot.ref.getDownloadURL();
@@ -41,10 +47,36 @@ class StorageService {
         downloadUrl: downloadUrl,
         storagePath: storagePath,
       );
+    } on TimeoutException {
+      throw StorageException(
+        code: 'timeout',
+        message: 'Upload timed out. Please check your connection and try again.',
+      );
     } on FirebaseException catch (e) {
+      // Handle specific Firebase error codes with user-friendly messages
+      String userMessage;
+      switch (e.code) {
+        case 'network-request-failed':
+        case 'unavailable':
+          userMessage = 'No internet connection. Please check your network and try again.';
+          break;
+        case 'unauthorized':
+        case 'unauthenticated':
+          userMessage = 'Authentication failed. Please restart the app.';
+          break;
+        case 'quota-exceeded':
+          userMessage = 'Storage quota exceeded. Please try again later.';
+          break;
+        case 'canceled':
+          userMessage = 'Upload was canceled.';
+          break;
+        default:
+          userMessage = 'Upload failed. Please try again.';
+      }
+      
       throw StorageException(
         code: e.code,
-        message: e.message ?? 'Upload failed',
+        message: userMessage,
       );
     }
   }
