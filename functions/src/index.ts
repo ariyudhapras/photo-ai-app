@@ -13,27 +13,31 @@ setGlobalOptions({maxInstances: 10});
 const SCENES = [
   {
     id: "beach",
+    label: "Beach",
     prompt:
-      "a tropical beach with crystal clear water, " +
-      "palm trees, and golden sunset lighting",
+      "tropical beach vacation with turquoise ocean water, " +
+      "white sand, palm trees, and beautiful sunset sky",
   },
   {
     id: "city",
+    label: "City",
     prompt:
-      "a modern city with impressive skyscrapers, " +
-      "urban streets, and cinematic lighting",
+      "modern metropolitan city with tall skyscrapers, " +
+      "busy urban street, and dramatic city lights",
   },
   {
     id: "mountain",
+    label: "Mountain",
     prompt:
-      "a majestic mountain peak with snow, " +
-      "breathtaking views, and dramatic clouds",
+      "majestic snowy mountain peak with breathtaking " +
+      "panoramic views and clear blue sky",
   },
   {
     id: "cafe",
+    label: "Cafe",
     prompt:
-      "a cozy European-style cafe with warm " +
-      "ambient lighting and aesthetic decor",
+      "cozy Parisian style outdoor cafe with warm " +
+      "string lights and charming European architecture",
   },
 ];
 
@@ -130,9 +134,11 @@ export const generateAIScenes = onCall(
           console.log(`Generating ${scene.id} scene...`);
 
           const prompt =
-            `Edit this image: Place the person in ${scene.prompt}. ` +
-            "Keep the person's appearance exactly the same. " +
-            "Create a realistic, high-quality photo suitable for Instagram.";
+            "Generate a new image based on this photo. " +
+            `Place the subject in a ${scene.prompt}. ` +
+            "Maintain the subject's face, body, and clothing exactly. " +
+            "Output a photorealistic, Instagram-worthy image. " +
+            "The output must be an image.";
 
           const result = await model.generateContent([
             {
