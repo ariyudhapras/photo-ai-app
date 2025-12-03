@@ -16,28 +16,21 @@ class ImageGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build list of all images to display
-    final List<_GridItem> items = [];
-
-    // Add original image first
-    if (originalImageUrl != null) {
-      items.add(_GridItem(
-        url: originalImageUrl!,
-        label: 'Original',
-      ));
-    }
+    // Build list of generated images (excluding original)
+    final List<_GridItem> generatedItems = [];
 
     // Add generated images (only those with resolved URLs)
     for (final image in generatedImages) {
       if (image.url != null) {
-        items.add(_GridItem(
+        generatedItems.add(_GridItem(
           url: image.url!,
           label: _formatLabel(image.scene),
         ));
       }
     }
 
-    if (items.isEmpty) {
+    // If no images at all, don't show anything
+    if (originalImageUrl == null && generatedItems.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -53,20 +46,40 @@ class ImageGrid extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppTheme.spacingM),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
+        
+        // Original image - centered and larger
+        if (originalImageUrl != null) ...[
+          Center(
+            child: SizedBox(
+              width: 200,
+              height: 200,
+              child: _ImageCard(
+                item: _GridItem(
+                  url: originalImageUrl!,
+                  label: 'Original',
+                ),
+              ),
+            ),
           ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return _ImageCard(item: items[index]);
-          },
-        ),
+          const SizedBox(height: AppTheme.spacingM),
+        ],
+        
+        // Generated images - 2x2 grid below
+        if (generatedItems.isNotEmpty)
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1,
+            ),
+            itemCount: generatedItems.length,
+            itemBuilder: (context, index) {
+              return _ImageCard(item: generatedItems[index]);
+            },
+          ),
       ],
     );
   }
