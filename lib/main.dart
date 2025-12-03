@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'config/app_theme.dart';
+import 'providers/app_provider.dart';
+import 'screens/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,59 +24,13 @@ class PhotoAIApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Photo AI',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
-        ),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        title: const Text('Photo AI'),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: Color(0xFF6366F1),
-              size: 64,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Firebase Initialized Successfully',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1F2937),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Ready to build Photo AI features',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
-            ),
-          ],
-        ),
+    return ChangeNotifierProvider(
+      create: (_) => AppProvider(),
+      child: MaterialApp(
+        title: 'Photo AI',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.themeData,
+        home: const HomeScreen(),
       ),
     );
   }
@@ -87,7 +45,7 @@ class FirebaseErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: const Color(0xFFFAFAFA),
+        backgroundColor: AppTheme.background,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -96,7 +54,7 @@ class FirebaseErrorApp extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.error_outline,
-                  color: Color(0xFFEF4444),
+                  color: AppTheme.error,
                   size: 64,
                 ),
                 const SizedBox(height: 16),
@@ -105,7 +63,7 @@ class FirebaseErrorApp extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1F2937),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -114,7 +72,7 @@ class FirebaseErrorApp extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFEF4444),
+                    color: AppTheme.error,
                   ),
                 ),
               ],
