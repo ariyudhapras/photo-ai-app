@@ -38,6 +38,9 @@ DEVELOPMENT_CHECKLIST.md
 # Firebase iOS config
 ios/Runner/GoogleService-Info.plist
 
+# Android local properties (user-specific SDK paths)
+android/local.properties
+
 #brief test
 Photo AI_Test Project.txt
 
