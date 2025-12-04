@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/generation.dart';
+import '../models/scene.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/functions_service.dart';
@@ -26,6 +27,7 @@ class AppProvider extends ChangeNotifier {
   File? _selectedImage;
   String? _uploadedImageUrl;
   String? _uploadedImagePath;
+  Set<Scene> _selectedScenes = {};
   List<GeneratedImage> _generatedImages = [];
   String? _errorMessage;
 
@@ -33,9 +35,12 @@ class AppProvider extends ChangeNotifier {
   AppState get state => _state;
   File? get selectedImage => _selectedImage;
   String? get uploadedImageUrl => _uploadedImageUrl;
+  Set<Scene> get selectedScenes => _selectedScenes;
   List<GeneratedImage> get generatedImages => _generatedImages;
   String? get errorMessage => _errorMessage;
   bool get hasSelectedImage => _selectedImage != null;
+  bool get hasSelectedScenes => _selectedScenes.isNotEmpty;
+  bool get canGenerate => hasSelectedImage && hasSelectedScenes;
   bool get hasResults => _generatedImages.isNotEmpty;
   bool get isLoading => _state == AppState.uploading || _state == AppState.generating;
 
@@ -44,6 +49,7 @@ class AppProvider extends ChangeNotifier {
     _selectedImage = image;
     _uploadedImageUrl = null;
     _uploadedImagePath = null;
+    _selectedScenes = {};
     _generatedImages = [];
     _errorMessage = null;
     _state = AppState.idle;
@@ -55,9 +61,26 @@ class AppProvider extends ChangeNotifier {
     _selectedImage = null;
     _uploadedImageUrl = null;
     _uploadedImagePath = null;
+    _selectedScenes = {};
     _generatedImages = [];
     _errorMessage = null;
     _state = AppState.idle;
+    notifyListeners();
+  }
+
+  /// Toggle scene selection (select/unselect).
+  void toggleScene(Scene scene) {
+    if (_selectedScenes.contains(scene)) {
+      _selectedScenes.remove(scene);
+    } else {
+      _selectedScenes.add(scene);
+    }
+    notifyListeners();
+  }
+
+  /// Clear all scene selections.
+  void clearScenes() {
+    _selectedScenes = {};
     notifyListeners();
   }
 
@@ -65,6 +88,11 @@ class AppProvider extends ChangeNotifier {
   Future<void> generateScenes() async {
     if (_selectedImage == null) {
       _setError('No image selected');
+      return;
+    }
+
+    if (_selectedScenes.isEmpty) {
+      _setError('Please select at least one scene');
       return;
     }
 
@@ -83,13 +111,18 @@ class AppProvider extends ChangeNotifier {
 
       // Step 3: Call Cloud Function to generate AI scenes
       _setState(AppState.generating);
+      final sceneIds = _selectedScenes.map((s) => s.id).toList();
       final generationResult = await _functionsService.generateAIScenes(
         imageUrl: _uploadedImageUrl!,
         imagePath: _uploadedImagePath!,
+        sceneIds: sceneIds,
       );
 
-      // Step 4: Update state with results
-      _generatedImages = generationResult.images;
+      // Step 4: Append new results to existing (for "Generate More" flow)
+      _generatedImages = [..._generatedImages, ...generationResult.images];
+      
+      // Step 5: Clear selection after successful generation
+      _selectedScenes = {};
       _setState(AppState.completed);
 
     } on AuthException catch (e) {
@@ -109,6 +142,7 @@ class AppProvider extends ChangeNotifier {
     _selectedImage = null;
     _uploadedImageUrl = null;
     _uploadedImagePath = null;
+    _selectedScenes = {};
     _generatedImages = [];
     _errorMessage = null;
     notifyListeners();
