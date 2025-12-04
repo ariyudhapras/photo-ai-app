@@ -10,45 +10,126 @@ admin.initializeApp();
 setGlobalOptions({maxInstances: 10});
 
 // Scene configurations for AI generation
-// Prompts designed for natural, candid Instagram-style photos
+// Prompts designed for realistic, phone-shot style photos
+// Common negative prompt to avoid AI-looking results
+const NEGATIVE_PROMPT =
+  "Always show the person's full face clearly visible, not cropped. " +
+  "Avoid: cropped face, cut off head, artificial look, obvious photoshop, " +
+  "CGI appearance, mismatched lighting, distorted face, warped features, " +
+  "unnatural skin smoothing, plastic skin, oversaturated colors, " +
+  "studio backdrop, stiff pose, watermarks, text overlays.";
+
 const SCENES = [
   {
     id: "beach",
     label: "Beach",
     prompt:
-      "relaxing at a beautiful tropical beach during golden hour, " +
-      "soft natural sunlight, turquoise water in background, " +
-      "casual vacation vibe, candid moment",
+      "Place this exact person naturally into a tropical beach scene. " +
+      "Shot on iPhone, candid vacation photo style. " +
+      "Golden hour soft lighting, person appears relaxed and natural. " +
+      "Background: turquoise water, soft sand, palm trees slightly blurred. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Natural smartphone photo quality - not overly sharp or processed. " +
+      "The person should look like they belong in this scene. " +
+      NEGATIVE_PROMPT,
   },
   {
     id: "city",
     label: "City",
     prompt:
-      "exploring a vibrant city street at dusk, " +
-      "warm street lights and neon signs in background, " +
-      "urban lifestyle aesthetic, natural street photography style",
+      "Place this exact person naturally into an urban city street scene. " +
+      "Shot on iPhone, casual street photography style. " +
+      "Evening blue hour with warm street lights and shop signs. " +
+      "Background: busy city street, blurred lights, urban architecture. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Natural depth of field as if shot on phone portrait mode. " +
+      "Candid moment - person looks natural, not posing for camera. " +
+      NEGATIVE_PROMPT,
   },
   {
     id: "mountain",
     label: "Mountain",
     prompt:
-      "hiking adventure with stunning mountain vista behind, " +
-      "crisp morning light, nature exploration mood, " +
-      "authentic outdoor travel moment",
+      "Place this exact person naturally into a mountain hiking scene. " +
+      "Shot on iPhone, adventure travel photo style. " +
+      "Bright daylight with natural sun, scenic mountain vista behind. " +
+      "Background: mountain peaks, hiking trail, nature landscape. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Natural outdoor lighting with soft shadows. " +
+      "Authentic travel moment - person enjoying the view naturally. " +
+      NEGATIVE_PROMPT,
   },
   {
     id: "cafe",
     label: "Cafe",
     prompt:
-      "enjoying coffee at a charming European sidewalk cafe, " +
-      "soft afternoon light, cozy atmosphere with string lights, " +
-      "relaxed lifestyle moment",
+      "Place this exact person naturally into a cozy cafe setting. " +
+      "Shot on iPhone, lifestyle photography style. " +
+      "Soft indoor lighting, warm ambient tones from cafe lights. " +
+      "Background: coffee shop interior, latte on table, soft blur. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Intimate casual moment - person relaxed, natural expression. " +
+      "Window light creating soft, flattering illumination. " +
+      NEGATIVE_PROMPT,
+  },
+  {
+    id: "forest",
+    label: "Forest",
+    prompt:
+      "Place this exact person naturally into a lush forest scene. " +
+      "Shot on iPhone, nature photography style. " +
+      "Dappled sunlight filtering through trees, green tones. " +
+      "Background: tall trees, ferns, natural forest path. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Peaceful nature moment - person at ease in natural surroundings. " +
+      "Soft natural lighting with gentle shadows from foliage. " +
+      NEGATIVE_PROMPT,
+  },
+  {
+    id: "sunset",
+    label: "Sunset",
+    prompt:
+      "Place this exact person naturally into a beautiful sunset scene. " +
+      "Shot on iPhone, golden hour photography style. " +
+      "Warm orange and pink sunset light illuminating the person. " +
+      "Background: dramatic sky with clouds, horizon line, silhouettes. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Warm glow on skin, subtle natural lens flare okay. " +
+      "Dreamy atmosphere but still realistic photo quality. " +
+      NEGATIVE_PROMPT,
+  },
+  {
+    id: "snow",
+    label: "Snow",
+    prompt:
+      "Place this exact person naturally into a winter snow scene. " +
+      "Shot on iPhone, winter travel photo style. " +
+      "Bright overcast lighting, soft and even illumination. " +
+      "Background: snow-covered landscape, pine trees, winter atmosphere. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Cold weather vibe - rosy cheeks natural. " +
+      "Clean white snow, cozy winter moment captured candidly. " +
+      NEGATIVE_PROMPT,
+  },
+  {
+    id: "garden",
+    label: "Garden",
+    prompt:
+      "Place this exact person naturally into a blooming garden scene. " +
+      "Shot on iPhone, spring lifestyle photography style. " +
+      "Soft diffused daylight, fresh and bright atmosphere. " +
+      "Background: colorful flowers, green plants, garden path or bench. " +
+      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
+      "Peaceful garden moment - person enjoying nature, relaxed pose. " +
+      "Natural colors, authentic outdoor photo feel. " +
+      NEGATIVE_PROMPT,
   },
 ];
 
 interface GenerateRequest {
   imageUrl: string;
   imagePath: string;
+  sceneIds: string[];
 }
 
 interface GeneratedImage {
@@ -77,13 +158,22 @@ export const generateAIScenes = onCall(
     }
 
     // 2. Validate request data
-    const {imageUrl, imagePath} = request.data as GenerateRequest;
+    const {imageUrl, imagePath, sceneIds} = request.data as GenerateRequest;
 
-    if (!imageUrl || !imagePath) {
+    if (!imageUrl || !imagePath || !sceneIds || sceneIds.length === 0) {
       throw new HttpsError(
         "invalid-argument",
-        "imageUrl and imagePath are required"
+        "imageUrl, imagePath, and sceneIds are required"
       );
+    }
+
+    // 2b. Validate all scenes exist
+    const selectedScenes = sceneIds
+      .map((id) => SCENES.find((s) => s.id === id))
+      .filter((s): s is (typeof SCENES)[number] => s !== undefined);
+
+    if (selectedScenes.length === 0) {
+      throw new HttpsError("invalid-argument", "No valid scenes selected");
     }
 
     // 3. Validate image path ownership
@@ -145,17 +235,10 @@ export const generateAIScenes = onCall(
         } as never,
       });
 
-      for (const scene of SCENES) {
+      // Generate all selected scenes
+      for (const scene of selectedScenes) {
         try {
           console.log(`Generating ${scene.id} scene...`);
-
-          const prompt =
-            "Create a natural, candid photo of this person " +
-            `${scene.prompt}. ` +
-            "Keep the person's face, features, and outfit exactly the same. " +
-            "Make it look like a real photo taken by a friend, " +
-            "not a studio shot. Natural lighting, relaxed pose. " +
-            "High quality, Instagram-ready.";
 
           const result = await model.generateContent([
             {
@@ -164,7 +247,7 @@ export const generateAIScenes = onCall(
                 data: base64Image,
               },
             },
-            prompt,
+            scene.prompt,
           ]);
 
           const response = result.response;
@@ -175,7 +258,6 @@ export const generateAIScenes = onCall(
           // Check if we got an image back
           if (parts) {
             for (const part of parts) {
-              // Check for inline image data
               const inlineData = (
                 part as {
                   inlineData?: {
@@ -188,7 +270,6 @@ export const generateAIScenes = onCall(
               if (inlineData?.data) {
                 console.log(`Found image for ${scene.id}`);
 
-                // Upload generated image to Storage (protected by rules)
                 const genPath = `users/${uid}/generated/${generationId}`;
                 const storagePath = `${genPath}/${scene.id}.png`;
                 const file = bucket.file(storagePath);
@@ -200,7 +281,6 @@ export const generateAIScenes = onCall(
                   },
                 });
 
-                // Return storage path (client will get download URL via SDK)
                 generatedImages.push({
                   path: storagePath,
                   scene: scene.id,
