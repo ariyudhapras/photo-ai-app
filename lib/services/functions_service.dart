@@ -13,24 +13,27 @@ class FunctionsService {
   /// 
   /// [imageUrl] - The download URL of the uploaded image.
   /// [imagePath] - The storage path for ownership validation.
+  /// [sceneIds] - List of selected scene IDs to generate.
   /// 
   /// Returns a list of generated images on success.
   /// Storage paths are resolved to download URLs via Firebase Storage SDK.
   Future<GenerationResult> generateAIScenes({
     required String imageUrl,
     required String imagePath,
+    required List<String> sceneIds,
   }) async {
     try {
       final callable = _functions.httpsCallable(
         'generateAIScenes',
         options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 5), // AI generation can take time
+          timeout: const Duration(minutes: 8), // More time for multiple scenes
         ),
       );
 
       final result = await callable.call({
         'imageUrl': imageUrl,
         'imagePath': imagePath,
+        'sceneIds': sceneIds,
       });
 
       final data = Map<String, dynamic>.from(result.data as Map);
