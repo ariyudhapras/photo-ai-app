@@ -16,10 +16,9 @@ class ImageGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build list of generated images (excluding original)
+    // Build list of generated images
     final List<_GridItem> generatedItems = [];
 
-    // Add generated images (only those with resolved URLs)
     for (final image in generatedImages) {
       if (image.url != null) {
         generatedItems.add(_GridItem(
@@ -34,38 +33,81 @@ class ImageGrid extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Single generated image: side-by-side comparison
+    if (generatedItems.length == 1 && originalImageUrl != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Comparison',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingS),
+          Row(
+            children: [
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: _ImageCard(
+                    item: _GridItem(url: originalImageUrl!, label: 'Original'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: _ImageCard(item: generatedItems[0]),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Multiple generated images: original small centered, grid below
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Your Scenes',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppTheme.spacingM),
-        
-        // Original image - centered and larger
+        // Original section - small, centered
         if (originalImageUrl != null) ...[
+          const Text(
+            'Original',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingS),
           Center(
             child: SizedBox(
-              width: 200,
-              height: 200,
+              width: 120,
+              height: 120,
               child: _ImageCard(
-                item: _GridItem(
-                  url: originalImageUrl!,
-                  label: 'Original',
-                ),
+                item: _GridItem(url: originalImageUrl!, label: ''),
               ),
             ),
           ),
-          const SizedBox(height: AppTheme.spacingM),
+          const SizedBox(height: AppTheme.spacingL),
         ],
-        
-        // Generated images - 2x2 grid below
-        if (generatedItems.isNotEmpty)
+
+        // Generated section
+        if (generatedItems.isNotEmpty) ...[
+          const Text(
+            'Generated Scenes',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingS),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -80,6 +122,7 @@ class ImageGrid extends StatelessWidget {
               return _ImageCard(item: generatedItems[index]);
             },
           ),
+        ],
       ],
     );
   }
