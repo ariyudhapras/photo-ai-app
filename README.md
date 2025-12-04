@@ -1,6 +1,6 @@
 # Photo AI
 
-Single-screen Flutter app that generates AI scene variations from portrait photos via Google Gemini. Core flow: **upload → generate → save → view**.
+Single-screen Flutter app that generates AI scene variations from portrait photos via Google Gemini. Core flow: **upload → select scenes → generate → save → view**.
 
 The app uses a single main screen intentionally, as specified in the technical brief requirements.
 
@@ -25,25 +25,25 @@ Provider + Services pattern — chosen over BLoC/Riverpod because the app has on
 
 ## Tech Stack
 
-| Layer   | Choice             | Reason                |
-| ------- | ------------------ | --------------------- |
-| UI      | Flutter 3.38.3     | Required              |
-| State   | Provider           | Simple, single-screen |
-| Auth    | Firebase Anonymous | Required              |
-| Storage | Firebase Storage   | Required              |
-| Backend | Cloud Functions    | Secrets server-side   |
-| AI      | Gemini 2.0 Flash   | Image generation      |
+| Layer   | Choice                | Reason                |
+| ------- | --------------------- | --------------------- |
+| UI      | Flutter 3.38.3        | Required              |
+| State   | Provider              | Simple, single-screen |
+| Auth    | Firebase Anonymous    | Required              |
+| Storage | Firebase Storage      | Required              |
+| Backend | Cloud Functions       | Secrets server-side   |
+| AI      | Gemini 2.5 Flash Image| Image generation      |
 
 ## Project Structure
 
 ```text
 lib/
 ├── config/         # AppTheme (colors, typography)
-├── models/         # Generation data model
+├── models/         # Generation, Scene data models
 ├── services/       # Auth, Storage, Functions
 ├── providers/      # AppProvider (state machine)
 ├── screens/        # HomeScreen
-└── widgets/        # UploadCard, GenerateButton, ImageGrid
+└── widgets/        # UploadCard, SceneSelector, GenerateButton, ImageGrid
 
 functions/src/
 └── index.ts        # generateAIScenes
@@ -87,10 +87,9 @@ flutter run
 
 ## Known Limitations
 
-- 4 fixed scenes (beach, city, mountain, cafe) — extensible via `SCENES` array
+- 8 fixed scenes (beach, city, mountain, cafe, forest, sunset, snow, garden) — extensible via `SCENE_DESCRIPTIONS` object
 - No image cropping before generation
 - Anonymous auth — data lost on app reinstall
-- Gemini model is experimental, may have availability limits
 
 ## AI-Assisted Workflow
 
@@ -105,7 +104,11 @@ Per the brief, this project used AI-assisted development for scaffolding and ref
 **Request:**
 
 ```json
-{ "imageUrl": "https://...", "imagePath": "users/{uid}/originals/{file}.jpg" }
+{ 
+  "imageUrl": "https://...", 
+  "imagePath": "users/{uid}/originals/{file}.jpg",
+  "sceneIds": ["beach", "city", "mountain"]
+}
 ```
 
 **Response:**
