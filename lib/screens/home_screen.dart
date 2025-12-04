@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../models/scene.dart';
 import '../providers/app_provider.dart';
 import '../widgets/upload_card.dart';
+import '../widgets/scene_selector.dart';
 import '../widgets/generate_button.dart';
 import '../widgets/image_grid.dart';
 
@@ -50,15 +52,27 @@ class HomeScreen extends StatelessWidget {
             onRemove: provider.hasSelectedImage ? () => provider.clearImage() : null,
             enabled: !provider.isLoading,
           ),
+
+          // Scene selector (show after image selected)
+          if (provider.hasSelectedImage) ...[
+            const SizedBox(height: AppTheme.spacingL),
+            SceneSelector(
+              scenes: availableScenes,
+              selectedScenes: provider.selectedScenes,
+              onToggle: provider.toggleScene,
+              enabled: !provider.isLoading,
+            ),
+          ],
           const SizedBox(height: AppTheme.spacingL),
 
           // Generate button
           GenerateButton(
             state: _getButtonState(provider),
-            onPressed: provider.hasSelectedImage ? () => provider.generateScenes() : null,
+            onPressed: provider.canGenerate ? () => provider.generateScenes() : null,
+            label: provider.hasResults ? 'Generate More' : null,
             loadingText: provider.state == AppState.uploading 
                 ? 'Uploading...' 
-                : 'Creating your scenes...',
+                : 'Creating ${provider.selectedScenes.length} scene${provider.selectedScenes.length > 1 ? 's' : ''}...',
           ),
 
           // Error message
@@ -175,7 +189,7 @@ class HomeScreen extends StatelessWidget {
     if (provider.isLoading) {
       return GenerateButtonState.loading;
     }
-    if (provider.hasSelectedImage) {
+    if (provider.canGenerate) {
       return GenerateButtonState.ready;
     }
     return GenerateButtonState.disabled;
