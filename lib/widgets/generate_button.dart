@@ -12,12 +12,14 @@ enum GenerateButtonState {
 class GenerateButton extends StatelessWidget {
   final GenerateButtonState state;
   final VoidCallback? onPressed;
+  final String? label;
   final String? loadingText;
 
   const GenerateButton({
     super.key,
     required this.state,
     this.onPressed,
+    this.label,
     this.loadingText,
   });
 
@@ -87,7 +89,7 @@ class GenerateButton extends StatelessWidget {
 
   Widget _buildReadyContent(bool isDisabled) {
     return Text(
-      'Generate Scenes',
+      label ?? 'Generate Scene',
       style: TextStyle(
         color: isDisabled ? AppTheme.textSecondary : Colors.white,
         fontSize: 16,
