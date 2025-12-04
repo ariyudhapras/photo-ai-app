@@ -9,122 +9,87 @@ admin.initializeApp();
 // Global options for cost control
 setGlobalOptions({maxInstances: 10});
 
-// Scene configurations for AI generation
-// Prompts designed for realistic, phone-shot style photos
-// Common negative prompt to avoid AI-looking results
-const NEGATIVE_PROMPT =
-  "Always show the person's full face clearly visible, not cropped. " +
-  "Avoid: cropped face, cut off head, artificial look, obvious photoshop, " +
-  "CGI appearance, mismatched lighting, distorted face, warped features, " +
-  "unnatural skin smoothing, plastic skin, oversaturated colors, " +
-  "studio backdrop, stiff pose, watermarks, text overlays.";
-
-const SCENES = [
-  {
-    id: "beach",
+// Scene descriptions for dynamic prompt building
+const SCENE_DESCRIPTIONS: Record<
+  string,
+  { label: string; description: string }
+> = {
+  beach: {
     label: "Beach",
-    prompt:
-      "Place this exact person naturally into a tropical beach scene. " +
-      "Shot on iPhone, candid vacation photo style. " +
-      "Golden hour soft lighting, person appears relaxed and natural. " +
-      "Background: turquoise water, soft sand, palm trees slightly blurred. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Natural smartphone photo quality - not overly sharp or processed. " +
-      "The person should look like they belong in this scene. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a tropical beach with turquoise water, soft sand, " +
+      "and palm trees in the background during golden hour",
   },
-  {
-    id: "city",
+  city: {
     label: "City",
-    prompt:
-      "Place this exact person naturally into an urban city street scene. " +
-      "Shot on iPhone, casual street photography style. " +
-      "Evening blue hour with warm street lights and shop signs. " +
-      "Background: busy city street, blurred lights, urban architecture. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Natural depth of field as if shot on phone portrait mode. " +
-      "Candid moment - person looks natural, not posing for camera. " +
-      NEGATIVE_PROMPT,
+    description:
+      "an urban city street at blue hour with warm street lights, " +
+      "shop signs, and blurred urban architecture in the background",
   },
-  {
-    id: "mountain",
+  mountain: {
     label: "Mountain",
-    prompt:
-      "Place this exact person naturally into a mountain hiking scene. " +
-      "Shot on iPhone, adventure travel photo style. " +
-      "Bright daylight with natural sun, scenic mountain vista behind. " +
-      "Background: mountain peaks, hiking trail, nature landscape. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Natural outdoor lighting with soft shadows. " +
-      "Authentic travel moment - person enjoying the view naturally. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a scenic mountain hiking trail with mountain peaks " +
+      "and natural landscape visible in bright daylight",
   },
-  {
-    id: "cafe",
+  cafe: {
     label: "Cafe",
-    prompt:
-      "Place this exact person naturally into a cozy cafe setting. " +
-      "Shot on iPhone, lifestyle photography style. " +
-      "Soft indoor lighting, warm ambient tones from cafe lights. " +
-      "Background: coffee shop interior, latte on table, soft blur. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Intimate casual moment - person relaxed, natural expression. " +
-      "Window light creating soft, flattering illumination. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a cozy cafe interior with soft window light, " +
+      "warm ambient tones, and a coffee on the table",
   },
-  {
-    id: "forest",
+  forest: {
     label: "Forest",
-    prompt:
-      "Place this exact person naturally into a lush forest scene. " +
-      "Shot on iPhone, nature photography style. " +
-      "Dappled sunlight filtering through trees, green tones. " +
-      "Background: tall trees, ferns, natural forest path. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Peaceful nature moment - person at ease in natural surroundings. " +
-      "Soft natural lighting with gentle shadows from foliage. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a lush green forest with tall trees, ferns, " +
+      "and dappled sunlight filtering through the foliage",
   },
-  {
-    id: "sunset",
+  sunset: {
     label: "Sunset",
-    prompt:
-      "Place this exact person naturally into a beautiful sunset scene. " +
-      "Shot on iPhone, golden hour photography style. " +
-      "Warm orange and pink sunset light illuminating the person. " +
-      "Background: dramatic sky with clouds, horizon line, silhouettes. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Warm glow on skin, subtle natural lens flare okay. " +
-      "Dreamy atmosphere but still realistic photo quality. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a scenic location during sunset with warm orange and pink sky, " +
+      "dramatic clouds, and golden hour lighting",
   },
-  {
-    id: "snow",
+  snow: {
     label: "Snow",
-    prompt:
-      "Place this exact person naturally into a winter snow scene. " +
-      "Shot on iPhone, winter travel photo style. " +
-      "Bright overcast lighting, soft and even illumination. " +
-      "Background: snow-covered landscape, pine trees, winter atmosphere. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Cold weather vibe - rosy cheeks natural. " +
-      "Clean white snow, cozy winter moment captured candidly. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a winter snow-covered landscape with pine trees " +
+      "and soft overcast lighting",
   },
-  {
-    id: "garden",
+  garden: {
     label: "Garden",
-    prompt:
-      "Place this exact person naturally into a blooming garden scene. " +
-      "Shot on iPhone, spring lifestyle photography style. " +
-      "Soft diffused daylight, fresh and bright atmosphere. " +
-      "Background: colorful flowers, green plants, garden path or bench. " +
-      "Keep exact face features, skin tone, hair, and clothing unchanged. " +
-      "Peaceful garden moment - person enjoying nature, relaxed pose. " +
-      "Natural colors, authentic outdoor photo feel. " +
-      NEGATIVE_PROMPT,
+    description:
+      "a blooming garden with colorful flowers, green plants, " +
+      "and soft diffused daylight",
   },
-];
+};
+
+/**
+ * Builds a realistic photo generation prompt for any scene.
+ * Uses a universal template with dynamic scene description injection.
+ * @param {string} sceneDescription - The scene description to inject.
+ * @return {string} The complete prompt for image generation.
+ */
+function buildRealisticPrompt(sceneDescription: string): string {
+  return (
+    "Generate a realistic photograph featuring the same person from the " +
+    "provided portrait. Keep the face and skin tone consistent with the " +
+    "original image. The output must look like a natural phone-shot " +
+    "photo.\n\n" +
+    "Blend the person seamlessly into the new scene with correct " +
+    "lighting, shadows, and perspective. Avoid AI-looking edges, halos, " +
+    "or cutout artifacts. Preserve clothing and body orientation unless " +
+    "the scene requires minor adjustments.\n\n" +
+    `Scene: ${sceneDescription}\n\n` +
+    "Constraints:\n" +
+    "- No stylized or artistic effects\n" +
+    "- No filters, HDR, surreal colors, or painterly textures\n" +
+    "- No cartoon-like rendering\n" +
+    "- Maintain realistic depth of field and mobile-camera optics\n" +
+    "- Output in standard photo aspect ratio\n" +
+    "- Always show the person's full face clearly visible, not cropped"
+  );
+}
 
 interface GenerateRequest {
   imageUrl: string;
@@ -139,7 +104,7 @@ interface GeneratedImage {
 
 /**
  * Cloud Function to generate AI scenes from an uploaded image.
- * Uses Google Gemini API with Imagen 3 for image generation.
+ * Uses Google Gemini API for image generation.
  */
 export const generateAIScenes = onCall(
   {
@@ -169,8 +134,14 @@ export const generateAIScenes = onCall(
 
     // 2b. Validate all scenes exist
     const selectedScenes = sceneIds
-      .map((id) => SCENES.find((s) => s.id === id))
-      .filter((s): s is (typeof SCENES)[number] => s !== undefined);
+      .map((id) => {
+        const scene = SCENE_DESCRIPTIONS[id];
+        return scene ? {id, ...scene} : undefined;
+      })
+      .filter(
+        (s): s is { id: string; label: string; description: string } =>
+          s !== undefined
+      );
 
     if (selectedScenes.length === 0) {
       throw new HttpsError("invalid-argument", "No valid scenes selected");
@@ -205,7 +176,8 @@ export const generateAIScenes = onCall(
       // Extract base MIME type (remove charset and other parameters)
       const baseContentType = rawContentType.split(";")[0].trim().toLowerCase();
 
-      if (!["image/jpeg", "image/jpg", "image/png"].includes(baseContentType)) {
+      const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+      if (!validTypes.includes(baseContentType)) {
         throw new HttpsError(
           "invalid-argument",
           "Uploaded file must be a JPEG or PNG image."
@@ -227,9 +199,9 @@ export const generateAIScenes = onCall(
       const generatedImages: GeneratedImage[] = [];
       const bucket = admin.storage().bucket();
 
-      // Use Gemini 2.0 Flash with image generation capability
+      // Use Gemini 2.5 Flash Image for better quality generation
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash-exp-image-generation",
+        model: "gemini-2.5-flash-image",
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
         } as never,
@@ -240,6 +212,10 @@ export const generateAIScenes = onCall(
         try {
           console.log(`Generating ${scene.id} scene...`);
 
+          // Build the realistic prompt with the scene description
+          const prompt = buildRealisticPrompt(scene.description);
+          console.log(`Using prompt for ${scene.id}`);
+
           const result = await model.generateContent([
             {
               inlineData: {
@@ -247,7 +223,7 @@ export const generateAIScenes = onCall(
                 data: base64Image,
               },
             },
-            scene.prompt,
+            prompt,
           ]);
 
           const response = result.response;

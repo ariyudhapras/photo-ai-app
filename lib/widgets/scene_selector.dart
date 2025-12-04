@@ -48,7 +48,7 @@ class SceneSelector extends StatelessWidget {
                       ),
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryStart.withOpacity(0.1),
+                        color: AppTheme.primaryStart.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -64,14 +64,14 @@ class SceneSelector extends StatelessWidget {
                     '${scenes.length} options',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppTheme.textSecondary.withOpacity(0.8),
+                      color: AppTheme.textSecondary.withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 12,
-                    color: AppTheme.textSecondary.withOpacity(0.6),
+                    color: AppTheme.textSecondary.withValues(alpha: 0.6),
                   ),
                 ],
               ),
@@ -84,7 +84,7 @@ class SceneSelector extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             itemCount: scenes.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final scene = scenes[index];
               final isSelected = selectedScenes.contains(scene);
@@ -190,7 +190,7 @@ class _SceneChipState extends State<_SceneChip>
             boxShadow: widget.isSelected
                 ? [
                     BoxShadow(
-                      color: AppTheme.primaryStart.withOpacity(0.2),
+                      color: AppTheme.primaryStart.withValues(alpha: 0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
