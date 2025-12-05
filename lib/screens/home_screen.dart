@@ -12,8 +12,64 @@ import '../widgets/image_grid.dart';
 
 /// Main screen of the Photo AI app.
 /// Single screen with upload, generate, and display functionality.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _resultsKey = GlobalKey();
+  AppState? _previousState;
+  int _previousResultsCount = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Called when generation completes - shows snackbar with View action
+  void _onGenerationCompleted(BuildContext context, int newCount) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Text('$newCount new scene${newCount > 1 ? 's' : ''} generated'),
+          ],
+        ),
+        backgroundColor: AppTheme.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        ),
+        margin: const EdgeInsets.all(AppTheme.spacingM),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'View',
+          textColor: Colors.white,
+          onPressed: _scrollToResults,
+        ),
+      ),
+    );
+  }
+
+  /// Smoothly scroll to results section
+  void _scrollToResults() {
+    final resultsContext = _resultsKey.currentContext;
+    if (resultsContext != null) {
+      Scrollable.ensureVisible(
+        resultsContext,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.1, // Slightly below top of viewport
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +82,22 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Consumer<AppProvider>(
         builder: (context, provider, child) {
+          // Check if generation just completed
+          if (_previousState == AppState.generating && 
+              provider.state == AppState.completed) {
+            final newCount = provider.generatedImages.length - _previousResultsCount;
+            // Use post-frame callback to show snackbar after build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _onGenerationCompleted(context, newCount > 0 ? newCount : provider.generatedImages.length);
+            });
+          }
+          
+          // Track state and results count for next comparison
+          _previousState = provider.state;
+          if (provider.state != AppState.generating) {
+            _previousResultsCount = provider.generatedImages.length;
+          }
+
           return Stack(
             children: [
               // Main content
@@ -41,6 +113,7 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, AppProvider provider) {
     return SingleChildScrollView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(AppTheme.spacingL),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,14 +154,35 @@ class HomeScreen extends StatelessWidget {
             _buildErrorMessage(provider),
           ],
 
-          // Results grid
-          if (provider.hasResults) ...[
-            const SizedBox(height: AppTheme.spacingXL),
-            ImageGrid(
-              originalImageUrl: provider.uploadedImageUrl,
-              generatedImages: provider.generatedImages,
-            ),
-          ],
+          // Results grid with appear animation
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.1),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: provider.hasResults
+                ? Padding(
+                    key: ValueKey(provider.generatedImages.length),
+                    padding: const EdgeInsets.only(top: AppTheme.spacingXL),
+                    child: ImageGrid(
+                      key: _resultsKey,
+                      originalImageUrl: provider.uploadedImageUrl,
+                      generatedImages: provider.generatedImages,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
 
           // Bottom padding for scroll
           const SizedBox(height: AppTheme.spacingXL),
