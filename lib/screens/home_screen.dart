@@ -155,33 +155,35 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
 
           // Results grid with appear animation
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: provider.hasResults
-                ? Padding(
-                    key: ValueKey(provider.generatedImages.length),
-                    padding: const EdgeInsets.only(top: AppTheme.spacingXL),
-                    child: ImageGrid(
-                      key: _resultsKey,
-                      originalImageUrl: provider.uploadedImageUrl,
-                      generatedImages: provider.generatedImages,
-                    ),
-                  )
-                : const SizedBox.shrink(),
+          Container(
+            key: _resultsKey,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.1),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: provider.hasResults
+                  ? Padding(
+                      key: ValueKey(provider.generatedImages.length),
+                      padding: const EdgeInsets.only(top: AppTheme.spacingXL),
+                      child: ImageGrid(
+                        originalImageUrl: provider.uploadedImageUrl,
+                        generatedImages: provider.generatedImages,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ),
 
           // Bottom padding for scroll
